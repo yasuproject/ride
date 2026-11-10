@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'smsethiopia' => [
+        'url' => env('SMSETHIOPIA_API_URL', 'https://api.smsethiopia.com/api/send'),
+    ],
+
 ];
