@@ -10,6 +10,7 @@ const navigation = [
     { name: 'Users', href: 'admin.users.index', icon: 'users' },
     { name: 'Rides', href: 'admin.rides.index', icon: 'car' },
     { name: 'SMS & OTP', href: 'admin.settings.edit', icon: 'settings' },
+    { name: 'My Account', href: 'admin.profile.edit', icon: 'account' },
 ];
 
 const isActive = (name) => {
@@ -69,6 +70,10 @@ const isActive = (name) => {
                     </svg>
                     <svg v-else-if="item.icon === 'car'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 17h.01M16 17h.01M3 11l1.5-4.5A2 2 0 016.4 5h11.2a2 2 0 011.9 1.5L21 11m-18 0h18m-18 0v5a1 1 0 001 1h1m16-6v5a1 1 0 01-1 1h-1m-11 0h8" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'account'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 12a4 4 0 100-8 4 4 0 000 8z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 20a8 8 0 0116 0" />
                     </svg>
                     <svg v-else class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317a1 1 0 011.35-.436l.34.17a1 1 0 00.894 0l.34-.17a1 1 0 011.35.436l.17.34a1 1 0 00.76.55l.378.054a1 1 0 01.848.985v.38a1 1 0 00.276.69l.252.27a1 1 0 010 1.32l-.252.27a1 1 0 00-.276.69v.38a1 1 0 01-.848.985l-.378.054a1 1 0 00-.76.55l-.17.34a1 1 0 01-1.35.436l-.34-.17a1 1 0 00-.894 0l-.34.17a1 1 0 01-1.35-.436l-.17-.34a1 1 0 00-.76-.55l-.378-.054a1 1 0 01-.848-.985v-.38a1 1 0 00-.276-.69l-.252-.27a1 1 0 010-1.32l.252-.27a1 1 0 00.276-.69v-.38a1 1 0 01.848-.985l.378-.054a1 1 0 00.76-.55l.17-.34z" />

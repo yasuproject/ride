@@ -36,7 +36,8 @@ return [
     ],
 
     'smsethiopia' => [
-        'url' => env('SMSETHIOPIA_API_URL', 'https://api.smsethiopia.com/api/send'),
+        // v2: POST JSON {msisdn,text} with KEY header. See https://smsethiopia.com/docs
+        'url' => env('SMSETHIOPIA_API_URL', 'https://smsethiopia.com/api/v2/sms/send'),
     ],
 
 ];

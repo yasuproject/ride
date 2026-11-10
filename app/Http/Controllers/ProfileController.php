@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,15 +30,16 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $user->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
-        return Redirect::route('admin.profile.edit');
+        return Redirect::route('admin.profile.edit')->with('status', 'Profile updated successfully.');
     }
 
     /**
@@ -50,6 +52,12 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        if ($user->is_admin && ! User::query()->where('is_admin', true)->whereKeyNot($user->getKey())->exists()) {
+            return Redirect::route('admin.profile.edit')->withErrors([
+                'password' => 'You cannot delete the last administrator account.',
+            ]);
+        }
 
         Auth::logout();
 
