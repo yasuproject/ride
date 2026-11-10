@@ -10,6 +10,7 @@ use App\Services\Sms\SmsDeliveryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -22,7 +23,7 @@ class AuthController extends Controller
         ]);
 
         if (! AppSetting::current()->otp_login_enabled) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'OTP login is currently unavailable.',
                 'data' => ['otp_login_enabled' => false],
@@ -32,11 +33,15 @@ class AuthController extends Controller
         try {
             $result = $otp->request($validated['phone']);
         } catch (SmsDeliveryException $exception) {
-            return response()->json([
+            $this->logSecurity('OTP delivery failed', $request, $validated['phone']);
+
+            return $this->json([
                 'success' => false,
                 'message' => 'Unable to send the verification code. Please try again later.',
             ], 503);
         } catch (OtpThrottledException $exception) {
+            $this->logSecurity('OTP request throttled', $request, $validated['phone']);
+
             return $this->throttledResponse($exception);
         } catch (ValidationException $exception) {
             throw $exception;
@@ -49,7 +54,9 @@ class AuthController extends Controller
             throw $exception;
         }
 
-        return response()->json([
+        $this->logSecurity('OTP requested', $request, $result['phone']);
+
+        return $this->json([
             'success' => true,
             'message' => 'Verification code sent.',
             'data' => $result,
@@ -60,7 +67,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'phone' => ['required', 'string', 'max:32'],
-            'code' => ['required', 'string', 'max:12'],
+            'code' => ['required', 'string', 'digits_between:4,8'],
             'name' => ['nullable', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:190'],
         ]);
@@ -73,10 +80,18 @@ class AuthController extends Controller
                 $validated['email'] ?? null,
             );
         } catch (OtpThrottledException $exception) {
+            $this->logSecurity('OTP verification throttled', $request, $validated['phone']);
+
             return $this->throttledResponse($exception);
+        } catch (ValidationException $exception) {
+            $this->logSecurity('OTP verification failed', $request, $validated['phone']);
+
+            throw $exception;
         }
 
-        return response()->json([
+        $this->logSecurity('OTP verified', $request, $result['user']->phone);
+
+        return $this->json([
             'success' => true,
             'message' => 'Authenticated successfully.',
             'data' => [
@@ -89,7 +104,7 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json([
+        return $this->json([
             'success' => true,
             'data' => $this->userPayload($request->user()),
         ]);
@@ -103,7 +118,9 @@ class AuthController extends Controller
             $token->delete();
         }
 
-        return response()->json([
+        $this->logSecurity('Token revoked', $request, $request->user()?->phone);
+
+        return $this->json([
             'success' => true,
             'message' => 'Logged out successfully.',
         ]);
@@ -123,7 +140,7 @@ class AuthController extends Controller
 
     private function throttledResponse(OtpThrottledException $exception): JsonResponse
     {
-        $response = response()->json([
+        $response = $this->json([
             'success' => false,
             'message' => $exception->getMessage(),
             'retry_after_seconds' => $exception->retryAfterSeconds,
@@ -134,5 +151,26 @@ class AuthController extends Controller
         }
 
         return $response;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function json(array $payload, int $status = 200): JsonResponse
+    {
+        // Auth payloads can contain bearer tokens; never let a proxy cache them.
+        return response()
+            ->json($payload, $status)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
+    }
+
+    private function logSecurity(string $event, Request $request, ?string $phone): void
+    {
+        Log::channel('security')->info($event, [
+            'phone' => $phone === null ? null : Str::mask($phone, '*', 4),
+            'ip' => $request->ip(),
+            'user_agent' => Str::limit((string) $request->userAgent(), 250),
+        ]);
     }
 }

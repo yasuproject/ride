@@ -7,7 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,22 +26,16 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Handle an incoming authentication request.
+     *
+     * Only administrators can reach this point; [LoginRequest] performs the
+     * admin check before a session is created.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 
+        // Protect against session fixation by issuing a new session ID.
         $request->session()->regenerate();
-
-        if (! $request->user()?->is_admin) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            throw ValidationException::withMessages([
-                'email' => 'Access restricted to administrators.',
-            ]);
-        }
 
         return redirect()->intended(route('admin.dashboard', absolute: false));
     }
@@ -51,11 +45,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $userId = $request->user()?->getAuthIdentifier();
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
+
+        Log::channel('security')->info('Admin logged out', [
+            'user_id' => $userId,
+            'ip' => $request->ip(),
+        ]);
 
         return redirect('/');
     }

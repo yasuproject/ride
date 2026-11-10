@@ -7,11 +7,24 @@ use App\Models\OtpCode;
 use App\Models\User;
 use App\Services\Sms\SmsEthiopiaService;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class OtpService
 {
+    /** Maximum successful code requests per phone number per hour. */
+    private const MAX_REQUESTS_PER_PHONE = 5;
+
+    /** Window (seconds) for the per-phone request limit. */
+    private const REQUEST_WINDOW_SECONDS = 3600;
+
+    /** Maximum failed verifications per phone number per window. */
+    private const MAX_FAILURES_PER_PHONE = 10;
+
+    /** Window (seconds) for the per-phone failure limit. */
+    private const FAILURE_WINDOW_SECONDS = 900;
+
     public function __construct(private readonly SmsEthiopiaService $sms)
     {
     }
@@ -65,6 +78,17 @@ class OtpService
         }
 
         $normalized = $this->normalizePhone($phone, $settings);
+
+        // Hard cap on SMS volume per phone, independent of source IP. This
+        // prevents an attacker rotating IPs from draining SMS credit.
+        $requestKey = 'otp-request:'.$normalized;
+        if (RateLimiter::tooManyAttempts($requestKey, self::MAX_REQUESTS_PER_PHONE)) {
+            throw new OtpThrottledException(
+                'Too many code requests. Please try again later.',
+                RateLimiter::availableIn($requestKey),
+            );
+        }
+
         $latest = OtpCode::query()
             ->where('phone', $normalized)
             ->whereNull('verified_at')
@@ -104,11 +128,13 @@ class OtpService
             );
         } catch (Throwable $exception) {
             // A failed delivery must not start a cooldown that blocks the user
-            // from retrying immediately.
+            // from retrying immediately, nor count against the phone quota.
             $record->delete();
 
             throw $exception;
         }
+
+        RateLimiter::hit($requestKey, self::REQUEST_WINDOW_SECONDS);
 
         return [
             'phone' => $normalized,
@@ -138,6 +164,16 @@ class OtpService
         }
 
         $normalized = $this->normalizePhone($phone, $settings);
+
+        // Cross-record failure limit. Requesting a fresh code resets the
+        // per-record attempt counter, so this prevents endless guessing.
+        $failureKey = 'otp-fail:'.$normalized;
+        if (RateLimiter::tooManyAttempts($failureKey, self::MAX_FAILURES_PER_PHONE)) {
+            throw new OtpThrottledException(
+                'Too many failed attempts. Please try again later.',
+                RateLimiter::availableIn($failureKey),
+            );
+        }
 
         $record = OtpCode::query()
             ->where('phone', $normalized)
@@ -169,6 +205,8 @@ class OtpService
         $record->refresh();
 
         if (! Hash::check(trim($code), $record->code_hash)) {
+            RateLimiter::hit($failureKey, self::FAILURE_WINDOW_SECONDS);
+
             $remaining = max(0, (int) $record->max_attempts - (int) $record->attempts);
             $message = $remaining > 0
                 ? 'The verification code is incorrect.'
@@ -176,6 +214,8 @@ class OtpService
 
             throw ValidationException::withMessages(['code' => $message]);
         }
+
+        RateLimiter::clear($failureKey);
 
         $record->forceFill(['verified_at' => now()])->save();
 
@@ -185,27 +225,41 @@ class OtpService
             ->where('id', '!=', $record->id)
             ->delete();
 
+        $cleanName = $this->cleanName($name);
+        $cleanEmail = $this->cleanEmail($email);
+
+        // Never let a verification overwrite an email that belongs to another
+        // account. Do this before persisting profile attributes to the user.
+        if ($cleanEmail !== null
+            && User::query()->where('email', $cleanEmail)->exists()) {
+            $ownerPhone = User::query()
+                ->where('email', $cleanEmail)
+                ->value('phone');
+
+            if ($ownerPhone !== $normalized) {
+                throw ValidationException::withMessages([
+                    'email' => 'That email address is already in use.',
+                ]);
+            }
+        }
+
         $user = User::query()->firstOrCreate(
             ['phone' => $normalized],
-            [
-                'name' => $this->cleanName($name) ?? 'Passenger',
-                'email' => $this->cleanEmail($email),
-                'is_admin' => false,
-            ],
+            ['name' => $cleanName ?? 'Passenger'],
         );
 
         $attributes = [];
-        if (($cleanName = $this->cleanName($name)) !== null) {
+        if ($cleanName !== null) {
             $attributes['name'] = $cleanName;
         }
-        if (($cleanEmail = $this->cleanEmail($email)) !== null) {
+        if ($cleanEmail !== null) {
             $attributes['email'] = $cleanEmail;
         }
         if ($attributes !== []) {
             $user->forceFill($attributes)->save();
         }
 
-        $token = $user->createToken('mobile')->plainTextToken;
+        $token = $user->createToken('mobile', ['mobile'])->plainTextToken;
 
         return ['user' => $user->refresh(), 'token' => $token];
     }

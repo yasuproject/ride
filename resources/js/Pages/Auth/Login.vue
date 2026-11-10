@@ -1,7 +1,6 @@
 <script setup>
-import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
+import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -19,7 +18,6 @@ defineProps({
 const form = useForm({
     email: '',
     password: '',
-    remember: false,
 });
 
 const submit = () => {
@@ -69,15 +67,6 @@ const submit = () => {
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
-                </label>
-            </div>
-
             <div class="mt-4 flex items-center justify-end">
                 <Link
                     v-if="canResetPassword"
@@ -95,6 +84,11 @@ const submit = () => {
                     Log in
                 </PrimaryButton>
             </div>
+
+            <p class="mt-6 text-xs leading-relaxed text-gray-500">
+                Administrator access only. Sign-in attempts are rate limited and
+                recorded for security review.
+            </p>
         </form>
     </GuestLayout>
 </template>

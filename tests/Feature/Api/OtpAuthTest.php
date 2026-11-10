@@ -368,6 +368,27 @@ class OtpAuthTest extends TestCase
         $this->getJson('/api/auth/me')->assertStatus(401);
     }
 
+    public function test_verify_otp_rejects_email_belonging_to_another_account(): void
+    {
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        AppSetting::current()->update(['sms_message_template' => 'Code: {code}']);
+
+        $this->postJson('/api/auth/request-otp', ['phone' => '0911000007'])->assertOk();
+
+        $this->postJson('/api/auth/verify-otp', [
+            'phone' => '0911000007',
+            'code' => $this->sentCode(),
+            'email' => 'taken@example.com',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('email');
+
+        $this->assertDatabaseMissing('users', [
+            'phone' => '+251911000007',
+            'email' => 'taken@example.com',
+        ]);
+    }
+
     private function sentCode(): string
     {
         $message = $this->sms->sent[array_key_last($this->sms->sent)]['message'];

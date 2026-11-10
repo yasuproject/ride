@@ -34,6 +34,22 @@ class UserFactory extends Factory
     }
 
     /**
+     * Allow tests to set the otherwise guarded [is_admin] flag.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function newModel(array $attributes = [])
+    {
+        $model = parent::newModel($attributes);
+
+        if (array_key_exists('is_admin', $attributes)) {
+            $model->forceFill(['is_admin' => (bool) $attributes['is_admin']]);
+        }
+
+        return $model;
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

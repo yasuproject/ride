@@ -6,6 +6,7 @@ use App\Models\Ride;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,18 +14,35 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Seed the application's database.
+     *
+     * The administrator account is only created when ADMIN_PASSWORD is set.
+     * There is intentionally no default password, and an existing account is
+     * never silently given a new password by re-running the seeder.
      */
     public function run(): void
     {
-        User::query()->updateOrCreate(
-            ['email' => 'admin@mkride.local'],
-            [
-                'name' => 'Administrator',
-                'password' => 'password',
+        $adminEmail = (string) env('ADMIN_EMAIL', 'admin@mkride.local');
+        $adminPassword = (string) env('ADMIN_PASSWORD', '');
+
+        $admin = User::query()->where('email', $adminEmail)->first();
+
+        if ($admin === null && $adminPassword === '') {
+            $this->command?->warn(
+                'No administrator was created. Set ADMIN_EMAIL and ADMIN_PASSWORD before seeding.'
+            );
+        } elseif ($admin === null) {
+            $admin = new User();
+            $admin->forceFill([
+                'name' => (string) env('ADMIN_NAME', 'Administrator'),
+                'email' => $adminEmail,
+                'password' => Hash::make($adminPassword),
                 'is_admin' => true,
                 'email_verified_at' => now(),
-            ],
-        );
+            ])->save();
+        } else {
+            // Keep privilege intact but never reset an existing password here.
+            $admin->forceFill(['is_admin' => true])->save();
+        }
 
         $samples = [
             ['reference' => 'RIDE-1001', 'passenger_name' => 'Abebe Kebede', 'passenger_phone' => '+251911000001', 'pickup_address' => 'Bole Medhanealem', 'dropoff_address' => 'CMC', 'status' => 'completed', 'fare' => 450.00, 'driver_name' => 'Samuel T.', 'requested_at' => now()->subHours(5)],

@@ -24,8 +24,18 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
-        'is_admin',
     ];
+
+    /**
+     * Determine whether the user is an administrator.
+     *
+     * `is_admin` is intentionally not mass assignable; it must be set with
+     * forceFill() by trusted provisioning code only.
+     */
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
+    }
 
     /**
      * The attributes that should be hidden for serialization.
