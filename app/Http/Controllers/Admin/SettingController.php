@@ -19,7 +19,6 @@ class SettingController extends Controller
             'settings' => [
                 'app_name' => $settings->app_name,
                 'otp_login_enabled' => (bool) $settings->otp_login_enabled,
-                'phone_country_code' => $settings->phone_country_code,
                 'otp_length' => (int) $settings->otp_length,
                 'otp_expiry_seconds' => (int) $settings->otp_expiry_seconds,
                 'resend_cooldown_seconds' => (int) $settings->resend_cooldown_seconds,
@@ -38,7 +37,6 @@ class SettingController extends Controller
         $validated = $request->validate([
             'app_name' => ['required', 'string', 'max:120'],
             'otp_login_enabled' => ['required', 'boolean'],
-            'phone_country_code' => ['required', 'string', 'max:8'],
             'otp_length' => ['required', 'integer', 'min:4', 'max:8'],
             'otp_expiry_seconds' => ['required', 'integer', 'min:30', 'max:3600'],
             'resend_cooldown_seconds' => ['required', 'integer', 'min:10', 'max:600'],
@@ -54,6 +52,9 @@ class SettingController extends Controller
         if (! filled($data['sms_api_key'] ?? null)) {
             unset($data['sms_api_key']);
         }
+
+        // Phone country code is fixed for this deployment and not editable in admin.
+        $data['phone_country_code'] = '+251';
 
         $settings->fill($data);
         $settings->save();

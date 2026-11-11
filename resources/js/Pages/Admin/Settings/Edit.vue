@@ -10,7 +10,6 @@ const props = defineProps({
 const form = useForm({
     app_name: props.settings?.app_name ?? 'MkRide',
     otp_login_enabled: !!props.settings?.otp_login_enabled,
-    phone_country_code: props.settings?.phone_country_code ?? '+251',
     otp_length: props.settings?.otp_length ?? 6,
     otp_expiry_seconds: props.settings?.otp_expiry_seconds ?? 300,
     resend_cooldown_seconds: props.settings?.resend_cooldown_seconds ?? 60,
@@ -71,12 +70,6 @@ const submit = () => {
                                 <input v-model="form.otp_login_enabled" type="checkbox" class="peer sr-only" />
                                 <div class="h-6 w-11 rounded-full bg-slate-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition peer-checked:bg-emerald-500 peer-checked:after:translate-x-full"></div>
                             </label>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-200">Phone country code</label>
-                            <input v-model="form.phone_country_code" type="text" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" placeholder="+251" />
-                            <p v-if="form.errors.phone_country_code" class="mt-1 text-sm text-rose-400">{{ form.errors.phone_country_code }}</p>
                         </div>
 
                         <div>
