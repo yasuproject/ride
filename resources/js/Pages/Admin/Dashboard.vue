@@ -89,7 +89,7 @@ const formatDate = (d) => (d ? new Date(d).toLocaleString() : '—');
                                 <td class="px-5 py-4 text-slate-300">{{ user.email || '—' }}</td>
                                 <td class="whitespace-nowrap px-5 py-4 text-slate-300">{{ formatDate(user.created_at) }}</td>
                                 <td class="px-5 py-4 text-right">
-                                    <Link :href="route('admin.users.show', user.id)" class="text-sm font-medium text-emerald-300 hover:text-emerald-200">View</Link>
+                                    <Link :href="route('admin.registered-users.show', user.id)" class="text-sm font-medium text-emerald-300 hover:text-emerald-200">View</Link>
                                 </td>
                             </tr>
                             <tr v-if="!recentCustomers?.length">
@@ -106,7 +106,7 @@ const formatDate = (d) => (d ? new Date(d).toLocaleString() : '—');
                                 <p class="font-semibold text-white">{{ user.name || '—' }}</p>
                                 <p class="text-sm text-slate-300">{{ user.phone || user.email || 'No contact' }}</p>
                             </div>
-                            <Link :href="route('admin.users.show', user.id)" class="text-sm font-medium text-emerald-300">View</Link>
+                            <Link :href="route('admin.registered-users.show', user.id)" class="text-sm font-medium text-emerald-300">View</Link>
                         </div>
                         <p class="mt-2 text-xs text-slate-500">Signed up {{ formatDate(user.created_at) }}</p>
                     </article>

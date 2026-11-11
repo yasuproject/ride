@@ -12,47 +12,20 @@ use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Manages dashboard/admin panel accounts (User table).
+ * App-registered users are managed by RegisteredUserController (AppUser table).
+ */
 class UserController extends Controller
 {
-    public function registered(Request $request): Response
+    public function index(Request $request): Response
     {
         $users = User::query()
-            ->where('is_admin', false)
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->trim()->toString();
                 $query->where(function ($q) use ($search): void {
                     $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                });
-            })
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
-
-        return Inertia::render('Admin/Users/Registered', [
-            'users' => $users,
-            'filters' => [
-                'search' => $request->input('search'),
-            ],
-            'stats' => [
-                'total' => User::query()->where('is_admin', false)->count(),
-                'today' => User::query()->where('is_admin', false)->whereDate('created_at', today())->count(),
-                'week' => User::query()->where('is_admin', false)->where('created_at', '>=', now()->subDays(7))->count(),
-            ],
-        ]);
-    }
-
-    public function admins(Request $request): Response
-    {
-        $users = User::query()
-            ->where('is_admin', true)
-            ->when($request->filled('search'), function ($query) use ($request): void {
-                $search = $request->string('search')->trim()->toString();
-                $query->where(function ($q) use ($search): void {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             ->latest()
@@ -65,15 +38,15 @@ class UserController extends Controller
                 'search' => $request->input('search'),
             ],
             'stats' => [
-                'total' => User::query()->where('is_admin', true)->count(),
+                'total' => User::query()->count(),
             ],
         ]);
     }
 
-    public function create(Request $request): Response
+    public function create(): Response
     {
         return Inertia::render('Admin/Users/Create', [
-            'type' => $request->query('type', 'registered'),
+            'type' => 'admin',
         ]);
     }
 
@@ -81,140 +54,88 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'phone' => ['nullable', 'string', 'max:32', 'unique:'.User::class],
-            'password' => ['nullable', 'confirmed', Password::defaults()],
-            'is_admin' => ['sometimes', 'boolean'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
-
-        if (empty($validated['email']) && empty($validated['phone'])) {
-            return back()->withErrors([
-                'email' => 'Either email or phone number is required.',
-                'phone' => 'Either email or phone number is required.',
-            ])->withInput();
-        }
-
-        $type = $request->input('type');
-        $isAdmin = (bool) ($validated['is_admin'] ?? false);
-        if ($type === 'admin') {
-            $isAdmin = true;
-        } elseif ($type === 'registered') {
-            $isAdmin = false;
-        }
 
         $user = new User();
         $user->forceFill([
             'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'is_admin' => $isAdmin,
+            'email' => $validated['email'],
+            'is_admin' => true,
             'email_verified_at' => now(),
+            'password' => Hash::make($validated['password']),
         ]);
-
-        if (! empty($validated['password'])) {
-            $user->forceFill(['password' => Hash::make($validated['password'])]);
-        }
-
         $user->save();
 
-        return redirect()->route('admin.users.show', $user)
-            ->with('status', $user->is_admin ? 'Admin user created successfully.' : 'Registered user created successfully.');
+        return redirect()->route('admin.admin-users.show', $user)
+            ->with('status', 'Admin user created successfully.');
     }
 
-    public function show(User $user): Response
+    public function show(User $admin_user): Response
     {
+        $user = $admin_user;
+        $user->setAttribute('account_type', 'admin');
+        $user->setAttribute('phone', $user->phone ?? null);
+
         return Inertia::render('Admin/Users/Show', [
             'user' => $user,
         ]);
     }
 
-    public function edit(User $user): Response
+    public function edit(User $admin_user): Response
     {
+        $user = $admin_user;
+        $user->setAttribute('account_type', 'admin');
+        $user->setAttribute('phone', $user->phone ?? null);
+
         return Inertia::render('Admin/Users/Edit', [
             'user' => $user,
         ]);
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $admin_user): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:32', Rule::unique(User::class)->ignore($user->id)],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($admin_user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
-            'is_admin' => ['sometimes', 'boolean'],
-            'remove_password' => ['sometimes', 'boolean'],
         ]);
 
-        if (empty($validated['email']) && empty($validated['phone'])) {
-            return back()->withErrors([
-                'email' => 'Either email or phone number is required.',
-                'phone' => 'Either email or phone number is required.',
-            ])->withInput();
-        }
-
-        $updates = [
+        $admin_user->forceFill([
             'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-        ];
-
-        if ($request->has('is_admin')) {
-            $newAdmin = (bool) $validated['is_admin'];
-
-            if ($user->id === $request->user()->id && ! $newAdmin) {
-                return back()->withErrors([
-                    'is_admin' => 'You cannot remove your own administrator access.',
-                ])->withInput();
-            }
-
-            if (! $newAdmin && ! $this->hasOtherAdmin($user)) {
-                return back()->withErrors([
-                    'is_admin' => 'You cannot remove the last administrator account.',
-                ])->withInput();
-            }
-
-            $updates['is_admin'] = $newAdmin;
-        }
-
-        $user->forceFill($updates);
+            'email' => $validated['email'],
+            'is_admin' => true,
+        ]);
 
         if (! empty($validated['password'])) {
-            $user->forceFill(['password' => Hash::make($validated['password'])]);
-        } elseif ($request->boolean('remove_password')) {
-            $user->forceFill(['password' => null]);
+            $admin_user->forceFill(['password' => Hash::make($validated['password'])]);
         }
 
-        $user->save();
+        $admin_user->save();
 
-        return redirect()->route('admin.users.show', $user)
-            ->with('status', 'User updated successfully.');
+        return redirect()->route('admin.admin-users.show', $admin_user)
+            ->with('status', 'Admin user updated successfully.');
     }
 
-    public function destroy(Request $request, User $user): RedirectResponse
+    public function destroy(Request $request, User $admin_user): RedirectResponse
     {
-        if ($user->id === $request->user()->id) {
+        if ($admin_user->id === $request->user()->id) {
             return back()->withErrors([
                 'user' => 'You cannot delete your own account.',
             ]);
         }
 
-        if ($user->is_admin && ! $this->hasOtherAdmin($user)) {
+        if (! $this->hasOtherAdmin($admin_user)) {
             return back()->withErrors([
                 'user' => 'You cannot delete the last administrator account.',
             ]);
         }
 
-        // Clear tokens if using Sanctum to avoid orphaned tokens
-        if (method_exists($user, 'tokens')) {
-            $user->tokens()->delete();
-        }
+        $admin_user->delete();
 
-        $wasAdmin = $user->is_admin;
-        $user->delete();
-
-        return redirect()->route($wasAdmin ? 'admin.admin-users.index' : 'admin.registered-users.index')
-            ->with('status', $wasAdmin ? 'Admin user deleted successfully.' : 'Registered user deleted successfully.');
+        return redirect()->route('admin.admin-users.index')
+            ->with('status', 'Admin user deleted successfully.');
     }
 
     private function hasOtherAdmin(User $user): bool

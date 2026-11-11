@@ -236,14 +236,14 @@ class AuthController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function userPayload(\App\Models\User $user): array
+    private function userPayload(\App\Models\AppUser $user): array
     {
         return [
             'id' => $user->id,
             'name' => $user->name,
             'phone' => $user->phone,
             'email' => $user->email,
-            'is_admin' => (bool) $user->is_admin,
+            'is_admin' => false,
         ];
     }
 

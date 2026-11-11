@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\AppSetting;
+use App\Models\AppUser;
 use App\Models\OtpCode;
 use App\Models\User;
 use App\Services\Sms\SmsDeliveryException;
@@ -226,7 +227,7 @@ class OtpAuthTest extends TestCase
                 ],
             ]);
 
-        $this->assertDatabaseHas('users', ['phone' => '+251911000001']);
+        $this->assertDatabaseHas('app_users', ['phone' => '+251911000001']);
         $this->assertDatabaseCount('personal_access_tokens', 1);
 
         $token = $response->json('data.token');
@@ -264,7 +265,7 @@ class OtpAuthTest extends TestCase
             ->assertJsonPath('data.user.name', 'Hanna Girma')
             ->assertJsonPath('data.user.email', 'hanna@example.com');
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('app_users', [
             'phone' => '+251911000004',
             'name' => 'Hanna Girma',
             'email' => 'hanna@example.com',
@@ -348,7 +349,7 @@ class OtpAuthTest extends TestCase
 
     public function test_logout_revokes_only_the_current_token(): void
     {
-        $user = User::factory()->create(['phone' => '+251911000006']);
+        $user = AppUser::factory()->create(['phone' => '+251911000006']);
         $current = $user->createToken('mobile')->plainTextToken;
         $other = $user->createToken('tablet')->plainTextToken;
 
@@ -370,7 +371,7 @@ class OtpAuthTest extends TestCase
 
     public function test_verify_otp_rejects_email_belonging_to_another_account(): void
     {
-        User::factory()->create(['email' => 'taken@example.com']);
+        AppUser::factory()->create(['email' => 'taken@example.com']);
 
         AppSetting::current()->update(['sms_message_template' => 'Code: {code}']);
 
@@ -383,7 +384,7 @@ class OtpAuthTest extends TestCase
         ])->assertStatus(422)
             ->assertJsonValidationErrors('email');
 
-        $this->assertDatabaseMissing('users', [
+        $this->assertDatabaseMissing('app_users', [
             'phone' => '+251911000007',
             'email' => 'taken@example.com',
         ]);

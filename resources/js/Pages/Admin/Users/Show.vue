@@ -1,14 +1,19 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
     user: Object,
 });
 
+const isAdminAccount = computed(() => props.user?.account_type === 'admin' || props.user?.is_admin === true);
+const routeBase = computed(() => (isAdminAccount.value ? 'admin.admin-users' : 'admin.registered-users'));
+const indexRoute = computed(() => (isAdminAccount.value ? 'admin.admin-users.index' : 'admin.registered-users.index'));
+
 const destroyUser = () => {
     if (!confirm(`Delete ${props.user?.name || 'this user'}? This cannot be undone.`)) return;
-    router.delete(route('admin.users.destroy', props.user.id));
+    router.delete(route(`${routeBase.value}.destroy`, props.user.id));
 };
 </script>
 
@@ -42,22 +47,22 @@ const destroyUser = () => {
                         <div class="mt-1 flex flex-wrap items-center gap-2">
                             <span
                                 :class="[
-                                    user?.is_admin
+                                    isAdminAccount
                                         ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-400/20'
                                         : 'bg-sky-500/15 text-sky-300 ring-sky-400/20',
                                     'inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset',
                                 ]"
                             >
-                                {{ user?.is_admin ? 'Administrator' : 'Passenger' }}
+                                {{ isAdminAccount ? 'Administrator' : 'Registered App User' }}
                             </span>
                             <span class="text-sm text-slate-400">ID #{{ user?.id }}</span>
                         </div>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <Link :href="route('admin.users.edit', user.id)" class="inline-flex items-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Edit user</Link>
+                    <Link :href="route(`${routeBase}.edit`, user.id)" class="inline-flex items-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Edit user</Link>
                     <button type="button" class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-rose-300 ring-1 ring-rose-400/20 hover:bg-rose-500/10" @click="destroyUser">Delete</button>
-                    <Link :href="route(user?.is_admin ? 'admin.admin-users.index' : 'admin.registered-users.index')" class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-300 ring-1 ring-white/10 hover:bg-white/5">Back</Link>
+                    <Link :href="route(indexRoute)" class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-300 ring-1 ring-white/10 hover:bg-white/5">Back</Link>
                 </div>
             </div>
 
@@ -80,8 +85,8 @@ const destroyUser = () => {
                     <h2 class="text-base font-semibold text-white">Account record</h2>
                     <dl class="mt-4 space-y-4 text-sm">
                         <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
-                            <dt class="text-slate-400">Role</dt>
-                            <dd class="font-medium text-slate-100">{{ user?.is_admin ? 'Administrator' : 'Passenger' }}</dd>
+                            <dt class="text-slate-400">Account type</dt>
+                            <dd class="font-medium text-slate-100">{{ isAdminAccount ? 'Admin Panel User' : 'Mobile App Registered User' }}</dd>
                         </div>
                         <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                             <dt class="text-slate-400">Email verified</dt>

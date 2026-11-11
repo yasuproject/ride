@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\AppSetting;
+use App\Models\AppUser;
 use App\Models\OtpCode;
-use App\Models\User;
 use App\Services\Sms\SmsEthiopiaService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -145,9 +145,9 @@ class OtpService
     }
 
     /**
-     * Verify an OTP and issue a Sanctum bearer token for the passenger.
+     * Verify an OTP and issue a Sanctum bearer token for the app user.
      *
-     * @return array{user:User, token:string}
+     * @return array{user:AppUser, token:string}
      */
     public function verify(
         string $phone,
@@ -232,8 +232,8 @@ class OtpService
         // Never let a verification overwrite an email that belongs to another
         // account. Do this before persisting profile attributes to the user.
         if ($cleanEmail !== null
-            && User::query()->where('email', $cleanEmail)->exists()) {
-            $ownerPhone = User::query()
+            && AppUser::query()->where('email', $cleanEmail)->exists()) {
+            $ownerPhone = AppUser::query()
                 ->where('email', $cleanEmail)
                 ->value('phone');
 
@@ -244,7 +244,7 @@ class OtpService
             }
         }
 
-        $user = User::query()->firstOrCreate(
+        $user = AppUser::query()->firstOrCreate(
             ['phone' => $normalized],
             ['name' => $cleanName ?? 'Passenger'],
         );
@@ -321,7 +321,7 @@ class OtpService
         $settings = AppSetting::current();
         $normalized = $this->normalizePhone($phone, $settings);
 
-        $user = User::query()->where('phone', $normalized)->first();
+        $user = AppUser::query()->where('phone', $normalized)->first();
         if (! $user) {
             throw ValidationException::withMessages([
                 'phone' => 'No account found with this phone number.',
@@ -391,14 +391,14 @@ class OtpService
     /**
      * Verify a password reset OTP and set a new password.
      *
-     * @return array{user:User, token:string}
+     * @return array{user:AppUser, token:string}
      */
     public function resetPassword(string $phone, string $code, string $password): array
     {
         $settings = AppSetting::current();
         $normalized = $this->normalizePhone($phone, $settings);
 
-        $user = User::query()->where('phone', $normalized)->first();
+        $user = AppUser::query()->where('phone', $normalized)->first();
         if (! $user) {
             throw ValidationException::withMessages([
                 'phone' => 'No account found with this phone number.',
@@ -490,7 +490,7 @@ class OtpService
         $settings = AppSetting::current();
         $normalized = $this->normalizePhone($phone, $settings);
 
-        $user = User::query()->where('phone', $normalized)->first();
+        $user = AppUser::query()->where('phone', $normalized)->first();
 
         return [
             'phone' => $normalized,
@@ -502,7 +502,7 @@ class OtpService
     /**
      * Authenticate with phone and password.
      *
-     * @return array{user:User, token:string}
+     * @return array{user:AppUser, token:string}
      */
     public function loginWithPassword(string $phone, string $password): array
     {
@@ -517,7 +517,7 @@ class OtpService
             );
         }
 
-        $user = User::query()->where('phone', $normalized)->first();
+        $user = AppUser::query()->where('phone', $normalized)->first();
 
         if (! $user || empty($user->password) || ! Hash::check($password, $user->password)) {
             RateLimiter::hit($throttleKey, 900);

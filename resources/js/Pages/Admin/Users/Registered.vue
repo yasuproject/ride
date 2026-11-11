@@ -25,7 +25,7 @@ const rows = (paginator) => paginator?.data ?? [];
 
 const destroyUser = (user) => {
     if (!confirm(`Delete ${user.name || user.email || user.phone || 'this user'}? This cannot be undone.`)) return;
-    router.delete(route('admin.users.destroy', user.id));
+    router.delete(route('admin.registered-users.destroy', user.id));
 };
 </script>
 
@@ -42,7 +42,7 @@ const destroyUser = (user) => {
                     <p class="mt-1 text-sm text-slate-400">Customers who created accounts in the mobile app. View and manage app registrations separately from admin panel users.</p>
                 </div>
                 <Link
-                    :href="route('admin.users.create', { type: 'registered' })"
+                    :href="route('admin.registered-users.create')"
                     class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-emerald-400"
                 >
                     + Add registered user
@@ -122,8 +122,8 @@ const destroyUser = (user) => {
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center justify-end gap-2">
-                                        <Link :href="route('admin.users.show', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-white/10 hover:bg-white/5">View</Link>
-                                        <Link :href="route('admin.users.edit', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/20 hover:bg-emerald-500/10">Edit</Link>
+                                        <Link :href="route('admin.registered-users.show', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-white/10 hover:bg-white/5">View</Link>
+                                        <Link :href="route('admin.registered-users.edit', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/20 hover:bg-emerald-500/10">Edit</Link>
                                         <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-300 ring-1 ring-rose-400/20 hover:bg-rose-500/10" @click="destroyUser(user)">Delete</button>
                                     </div>
                                 </td>
@@ -146,8 +146,8 @@ const destroyUser = (user) => {
                             <span class="shrink-0 inline-flex rounded-full bg-sky-500/15 px-2.5 py-1 text-xs font-medium text-sky-300 ring-1 ring-inset ring-sky-400/20">App user</span>
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2">
-                            <Link :href="route('admin.users.show', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-white/10">View</Link>
-                            <Link :href="route('admin.users.edit', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/20">Edit</Link>
+                            <Link :href="route('admin.registered-users.show', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-white/10">View</Link>
+                            <Link :href="route('admin.registered-users.edit', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/20">Edit</Link>
                             <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-300 ring-1 ring-rose-400/20" @click="destroyUser(user)">Delete</button>
                         </div>
                     </article>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\RegisteredUserController;
 use App\Http\Controllers\Admin\RideController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
@@ -19,10 +20,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/rides', [RideController::class, 'index'])->name('rides.index');
 
-    Route::get('/registered-users', [UserController::class, 'registered'])->name('registered-users.index');
-    Route::get('/user-management', [UserController::class, 'admins'])->name('admin-users.index');
+    // App-registered users (separate table: app_users)
+    Route::resource('registered-users', RegisteredUserController::class)
+        ->parameters(['registered-users' => 'registered_user'])
+        ->names('registered-users');
 
-    Route::resource('users', UserController::class)->except(['index']);
+    // Dashboard/admin panel accounts (separate table: users)
+    Route::get('/user-management', [UserController::class, 'index'])->name('admin-users.index');
+    Route::resource('user-management', UserController::class)
+        ->parameters(['user-management' => 'admin_user'])
+        ->names('admin-users')
+        ->except(['index']);
 
     Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
