@@ -154,6 +154,7 @@ class OtpService
         string $code,
         ?string $name = null,
         ?string $email = null,
+        ?string $password = null,
     ): array {
         $settings = AppSetting::current();
 
@@ -255,6 +256,10 @@ class OtpService
         if ($cleanEmail !== null) {
             $attributes['email'] = $cleanEmail;
         }
+        $cleanPassword = $this->cleanPassword($password);
+        if ($cleanPassword !== null) {
+            $attributes['password'] = Hash::make($cleanPassword);
+        }
         if ($attributes !== []) {
             $user->forceFill($attributes)->save();
         }
@@ -297,5 +302,241 @@ class OtpService
         $email = trim((string) $email);
 
         return $email === '' ? null : mb_substr($email, 0, 190);
+    }
+
+    private function cleanPassword(?string $password): ?string
+    {
+        $password = (string) $password;
+
+        return $password === '' ? null : $password;
+    }
+
+    /**
+     * Request an OTP for password reset. Only for existing accounts.
+     *
+     * @return array{phone:string, expires_in:int, resend_cooldown_seconds:int, otp_length:int}
+     */
+    public function requestPasswordReset(string $phone): array
+    {
+        $settings = AppSetting::current();
+        $normalized = $this->normalizePhone($phone, $settings);
+
+        $user = User::query()->where('phone', $normalized)->first();
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'phone' => 'No account found with this phone number.',
+            ]);
+        }
+
+        $requestKey = 'otp-request:'.$normalized;
+        if (RateLimiter::tooManyAttempts($requestKey, self::MAX_REQUESTS_PER_PHONE)) {
+            throw new OtpThrottledException(
+                'Too many code requests. Please try again later.',
+                RateLimiter::availableIn($requestKey),
+            );
+        }
+
+        $latest = OtpCode::query()
+            ->where('phone', $normalized)
+            ->whereNull('verified_at')
+            ->latest('id')
+            ->first();
+
+        if ($latest && $latest->last_sent_at) {
+            $waitSeconds = (int) ($latest->last_sent_at->getTimestamp()
+                + (int) $settings->resend_cooldown_seconds
+                - now()->getTimestamp());
+
+            if ($waitSeconds > 0) {
+                throw new OtpThrottledException(
+                    'Please wait before requesting another code.',
+                    $waitSeconds,
+                );
+            }
+        }
+
+        $length = max(4, min(8, (int) $settings->otp_length));
+        $code = $this->generateCode($length);
+
+        $record = OtpCode::query()->create([
+            'phone' => $normalized,
+            'code_hash' => Hash::make($code),
+            'expires_at' => now()->addSeconds((int) $settings->otp_expiry_seconds),
+            'last_sent_at' => now(),
+            'attempts' => 0,
+            'max_attempts' => (int) $settings->max_verify_attempts,
+        ]);
+
+        try {
+            $this->sms->send(
+                $normalized,
+                $this->renderMessage($settings, $code),
+                $settings,
+            );
+        } catch (Throwable $exception) {
+            $record->delete();
+            throw $exception;
+        }
+
+        RateLimiter::hit($requestKey, self::REQUEST_WINDOW_SECONDS);
+
+        return [
+            'phone' => $normalized,
+            'expires_in' => (int) $settings->otp_expiry_seconds,
+            'resend_cooldown_seconds' => (int) $settings->resend_cooldown_seconds,
+            'otp_length' => $length,
+        ];
+    }
+
+    /**
+     * Verify a password reset OTP and set a new password.
+     *
+     * @return array{user:User, token:string}
+     */
+    public function resetPassword(string $phone, string $code, string $password): array
+    {
+        $settings = AppSetting::current();
+        $normalized = $this->normalizePhone($phone, $settings);
+
+        $user = User::query()->where('phone', $normalized)->first();
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'phone' => 'No account found with this phone number.',
+            ]);
+        }
+
+        $failureKey = 'otp-fail:'.$normalized;
+        if (RateLimiter::tooManyAttempts($failureKey, self::MAX_FAILURES_PER_PHONE)) {
+            throw new OtpThrottledException(
+                'Too many failed attempts. Please try again later.',
+                RateLimiter::availableIn($failureKey),
+            );
+        }
+
+        $record = OtpCode::query()
+            ->where('phone', $normalized)
+            ->whereNull('verified_at')
+            ->latest('id')
+            ->first();
+
+        if (! $record) {
+            throw ValidationException::withMessages([
+                'code' => 'No verification code found. Please request a new one.',
+            ]);
+        }
+
+        if ($record->isExpired()) {
+            throw ValidationException::withMessages([
+                'code' => 'This verification code has expired. Please request a new one.',
+            ]);
+        }
+
+        if ($record->attempts >= $record->max_attempts) {
+            throw new OtpThrottledException(
+                'Too many attempts. Please request a new code.',
+            );
+        }
+
+        $record->increment('attempts');
+        $record->refresh();
+
+        if (! Hash::check(trim($code), $record->code_hash)) {
+            RateLimiter::hit($failureKey, self::FAILURE_WINDOW_SECONDS);
+
+            $remaining = max(0, (int) $record->max_attempts - (int) $record->attempts);
+            $message = $remaining > 0
+                ? 'The verification code is incorrect.'
+                : 'Too many attempts. Please request a new code.';
+
+            throw ValidationException::withMessages(['code' => $message]);
+        }
+
+        RateLimiter::clear($failureKey);
+
+        $record->forceFill(['verified_at' => now()])->save();
+
+        OtpCode::query()
+            ->where('phone', $normalized)
+            ->whereNull('verified_at')
+            ->where('id', '!=', $record->id)
+            ->delete();
+
+        $cleanPassword = $this->cleanPassword($password);
+        if ($cleanPassword === null || strlen($cleanPassword) < 6) {
+            throw ValidationException::withMessages([
+                'password' => 'Password must be at least 6 characters.',
+            ]);
+        }
+
+        $user->forceFill(['password' => Hash::make($cleanPassword)])->save();
+
+        // Revoke existing tokens for security after password reset.
+        if (method_exists($user, 'tokens')) {
+            $user->tokens()->delete();
+        }
+
+        $token = $user->createToken('mobile', ['mobile'])->plainTextToken;
+
+        return ['user' => $user->refresh(), 'token' => $token];
+    }
+
+    /**
+     * Check if a phone number is registered.
+     *
+     * @return array{phone:string, exists:bool, has_password:bool}
+     */
+    public function checkPhone(string $phone): array
+    {
+        $settings = AppSetting::current();
+        $normalized = $this->normalizePhone($phone, $settings);
+
+        $user = User::query()->where('phone', $normalized)->first();
+
+        return [
+            'phone' => $normalized,
+            'exists' => $user !== null,
+            'has_password' => $user !== null && filled($user->password),
+        ];
+    }
+
+    /**
+     * Authenticate with phone and password.
+     *
+     * @return array{user:User, token:string}
+     */
+    public function loginWithPassword(string $phone, string $password): array
+    {
+        $settings = AppSetting::current();
+        $normalized = $this->normalizePhone($phone, $settings);
+
+        $throttleKey = 'pwd-login:'.$normalized;
+        if (RateLimiter::tooManyAttempts($throttleKey, 10)) {
+            throw new OtpThrottledException(
+                'Too many login attempts. Please try again later.',
+                RateLimiter::availableIn($throttleKey),
+            );
+        }
+
+        $user = User::query()->where('phone', $normalized)->first();
+
+        if (! $user || empty($user->password) || ! Hash::check($password, $user->password)) {
+            RateLimiter::hit($throttleKey, 900);
+
+            if ($user && empty($user->password)) {
+                throw ValidationException::withMessages([
+                    'password' => 'No password set for this account. Please reset your password.',
+                ]);
+            }
+
+            throw ValidationException::withMessages([
+                'phone' => 'Invalid phone number or password.',
+            ]);
+        }
+
+        RateLimiter::clear($throttleKey);
+
+        $token = $user->createToken('mobile', ['mobile'])->plainTextToken;
+
+        return ['user' => $user->refresh(), 'token' => $token];
     }
 }

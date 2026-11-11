@@ -16,6 +16,50 @@ use Throwable;
 
 class AuthController extends Controller
 {
+    public function checkPhone(Request $request, OtpService $otp): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:32'],
+        ]);
+
+        $result = $otp->checkPhone($validated['phone']);
+
+        return $this->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    public function login(Request $request, OtpService $otp): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:32'],
+            'password' => ['required', 'string', 'max:255'],
+        ]);
+
+        try {
+            $result = $otp->loginWithPassword($validated['phone'], $validated['password']);
+        } catch (OtpThrottledException $exception) {
+            $this->logSecurity('Password login throttled', $request, $validated['phone']);
+            return $this->throttledResponse($exception);
+        } catch (ValidationException $exception) {
+            $this->logSecurity('Password login failed', $request, $validated['phone']);
+            throw $exception;
+        }
+
+        $this->logSecurity('Password login success', $request, $result['user']->phone);
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Authenticated successfully.',
+            'data' => [
+                'token' => $result['token'],
+                'token_type' => 'Bearer',
+                'user' => $this->userPayload($result['user']),
+            ],
+        ]);
+    }
+
     public function requestOtp(Request $request, OtpService $otp): JsonResponse
     {
         $validated = $request->validate([
@@ -70,6 +114,7 @@ class AuthController extends Controller
             'code' => ['required', 'string', 'digits_between:4,8'],
             'name' => ['nullable', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:190'],
+            'password' => ['nullable', 'string', 'min:6', 'max:255'],
         ]);
 
         try {
@@ -78,6 +123,7 @@ class AuthController extends Controller
                 $validated['code'],
                 $validated['name'] ?? null,
                 $validated['email'] ?? null,
+                $validated['password'] ?? null,
             );
         } catch (OtpThrottledException $exception) {
             $this->logSecurity('OTP verification throttled', $request, $validated['phone']);
@@ -94,6 +140,69 @@ class AuthController extends Controller
         return $this->json([
             'success' => true,
             'message' => 'Authenticated successfully.',
+            'data' => [
+                'token' => $result['token'],
+                'token_type' => 'Bearer',
+                'user' => $this->userPayload($result['user']),
+            ],
+        ]);
+    }
+
+    public function forgotPassword(Request $request, OtpService $otp): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:32'],
+        ]);
+
+        try {
+            $result = $otp->requestPasswordReset($validated['phone']);
+        } catch (SmsDeliveryException $exception) {
+            $this->logSecurity('Password reset OTP delivery failed', $request, $validated['phone']);
+            return $this->json([
+                'success' => false,
+                'message' => 'Unable to send the verification code. Please try again later.',
+            ], 503);
+        } catch (OtpThrottledException $exception) {
+            $this->logSecurity('Password reset OTP throttled', $request, $validated['phone']);
+            return $this->throttledResponse($exception);
+        }
+
+        $this->logSecurity('Password reset OTP requested', $request, $result['phone']);
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Verification code sent.',
+            'data' => $result,
+        ]);
+    }
+
+    public function resetPassword(Request $request, OtpService $otp): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:32'],
+            'code' => ['required', 'string', 'digits_between:4,8'],
+            'password' => ['required', 'string', 'min:6', 'max:255'],
+        ]);
+
+        try {
+            $result = $otp->resetPassword(
+                $validated['phone'],
+                $validated['code'],
+                $validated['password'],
+            );
+        } catch (OtpThrottledException $exception) {
+            $this->logSecurity('Password reset throttled', $request, $validated['phone']);
+            return $this->throttledResponse($exception);
+        } catch (ValidationException $exception) {
+            $this->logSecurity('Password reset failed', $request, $validated['phone']);
+            throw $exception;
+        }
+
+        $this->logSecurity('Password reset success', $request, $result['user']->phone);
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Password reset successfully.',
             'data' => [
                 'token' => $result['token'],
                 'token_type' => 'Bearer',
