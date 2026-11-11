@@ -20,7 +20,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/rides', [RideController::class, 'index'])->name('rides.index');
 
-    // App customers (separate table: app_users)
+    // App customers (separate table: customers)
     Route::resource('customers', CustomerController::class)
         ->parameters(['customers' => 'customer']);
     Route::post('customers/{customer}/block', [CustomerController::class, 'block'])->name('customers.block');

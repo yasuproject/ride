@@ -11,7 +11,7 @@ class AppUser extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $table = 'app_users';
+    protected $table = 'customers';
 
     /**
      * @var list<string>

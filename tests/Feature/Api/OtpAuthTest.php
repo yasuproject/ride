@@ -227,7 +227,7 @@ class OtpAuthTest extends TestCase
                 ],
             ]);
 
-        $this->assertDatabaseHas('app_users', ['phone' => '+251911000001']);
+        $this->assertDatabaseHas('customers', ['phone' => '+251911000001']);
         $this->assertDatabaseCount('personal_access_tokens', 1);
 
         $token = $response->json('data.token');
@@ -265,7 +265,7 @@ class OtpAuthTest extends TestCase
             ->assertJsonPath('data.user.name', 'Hanna Girma')
             ->assertJsonPath('data.user.email', 'hanna@example.com');
 
-        $this->assertDatabaseHas('app_users', [
+        $this->assertDatabaseHas('customers', [
             'phone' => '+251911000004',
             'name' => 'Hanna Girma',
             'email' => 'hanna@example.com',
@@ -384,7 +384,7 @@ class OtpAuthTest extends TestCase
         ])->assertStatus(422)
             ->assertJsonValidationErrors('email');
 
-        $this->assertDatabaseMissing('app_users', [
+        $this->assertDatabaseMissing('customers', [
             'phone' => '+251911000007',
             'email' => 'taken@example.com',
         ]);

@@ -67,8 +67,8 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:app_users,email'],
-            'phone' => ['required', 'string', 'max:32', 'unique:app_users,phone'],
+            'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:customers,email'],
+            'phone' => ['required', 'string', 'max:32', 'unique:customers,phone'],
             'password' => ['nullable', 'confirmed', Password::defaults()],
         ]);
 
@@ -118,8 +118,8 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', Rule::unique('app_users', 'email')->ignore($customer->id)],
-            'phone' => ['required', 'string', 'max:32', Rule::unique('app_users', 'phone')->ignore($customer->id)],
+            'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', Rule::unique('customers', 'email')->ignore($customer->id)],
+            'phone' => ['required', 'string', 'max:32', Rule::unique('customers', 'phone')->ignore($customer->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'remove_password' => ['sometimes', 'boolean'],
         ]);
