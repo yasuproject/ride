@@ -70,9 +70,13 @@ const destroyUser = () => {
                 <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-5 sm:p-6">
                     <h2 class="text-base font-semibold text-white">Contact information</h2>
                     <dl class="mt-4 space-y-4 text-sm">
-                        <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                        <div v-if="!isAdminAccount" class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                             <dt class="text-slate-400">Phone number</dt>
                             <dd class="font-medium text-slate-100">{{ user?.phone || '—' }}</dd>
+                        </div>
+                        <div v-if="isAdminAccount" class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                            <dt class="text-slate-400">Username</dt>
+                            <dd class="font-medium text-slate-100">{{ user?.username || '—' }}</dd>
                         </div>
                         <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                             <dt class="text-slate-400">Email address</dt>
@@ -86,7 +90,11 @@ const destroyUser = () => {
                     <dl class="mt-4 space-y-4 text-sm">
                         <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                             <dt class="text-slate-400">Account type</dt>
-                            <dd class="font-medium text-slate-100">{{ isAdminAccount ? 'Admin Panel User' : 'Mobile App Customer' }}</dd>
+                            <dd class="font-medium text-slate-100">{{ isAdminAccount ? 'Dashboard User' : 'Mobile App Customer' }}</dd>
+                        </div>
+                        <div v-if="isAdminAccount" class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                            <dt class="text-slate-400">Role</dt>
+                            <dd class="font-medium text-slate-100 capitalize">{{ (user?.role || 'administrator').replace('_', ' ') }}</dd>
                         </div>
                         <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                             <dt class="text-slate-400">Email verified</dt>

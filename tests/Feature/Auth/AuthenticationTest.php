@@ -19,10 +19,10 @@ class AuthenticationTest extends TestCase
 
     public function test_admin_users_can_authenticate(): void
     {
-        $user = User::factory()->create(['is_admin' => true]);
+        $user = User::factory()->create(['is_admin' => true, 'username' => 'adminuser']);
 
         $response = $this->post('/login', [
-            'email' => $user->email,
+            'username' => 'adminuser',
             'password' => 'password',
         ]);
 
@@ -32,24 +32,24 @@ class AuthenticationTest extends TestCase
 
     public function test_non_admin_users_cannot_authenticate(): void
     {
-        $user = User::factory()->create(['is_admin' => false]);
+        $user = User::factory()->create(['is_admin' => false, 'role' => 'none', 'username' => 'regular']);
 
         $response = $this->from('/login')->post('/login', [
-            'email' => $user->email,
+            'username' => 'regular',
             'password' => 'password',
         ]);
 
         $this->assertGuest();
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors('username');
         $response->assertRedirect('/login');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $user = User::factory()->create(['is_admin' => true]);
+        $user = User::factory()->create(['is_admin' => true, 'username' => 'adminuser2']);
 
         $this->post('/login', [
-            'email' => $user->email,
+            'username' => 'adminuser2',
             'password' => 'wrong-password',
         ]);
 

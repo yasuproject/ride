@@ -31,7 +31,11 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $user->fill($request->validated());
+        $validated = $request->validated();
+        if (isset($validated['username'])) {
+            $validated['username'] = strtolower((string) $validated['username']);
+        }
+        $user->fill($validated);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -53,7 +57,14 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        if ($user->is_admin && ! User::query()->where('is_admin', true)->whereKeyNot($user->getKey())->exists()) {
+        $hasOtherAdmin = User::query()
+            ->whereKeyNot($user->getKey())
+            ->where(function ($q) {
+                $q->where('is_admin', true)->orWhereIn('role', User::roles());
+            })
+            ->exists();
+
+        if ($user->isAdmin() && ! $hasOtherAdmin) {
             return Redirect::route('admin.profile.edit')->withErrors([
                 'password' => 'You cannot delete the last administrator account.',
             ]);

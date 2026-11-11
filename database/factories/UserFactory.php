@@ -26,7 +26,10 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
+            'role' => 'administrator',
+            'is_admin' => true,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
@@ -34,7 +37,7 @@ class UserFactory extends Factory
     }
 
     /**
-     * Allow tests to set the otherwise guarded [is_admin] flag.
+     * Allow tests to set guarded dashboard fields.
      *
      * @param  array<string, mixed>  $attributes
      */
@@ -42,8 +45,18 @@ class UserFactory extends Factory
     {
         $model = parent::newModel($attributes);
 
+        $guarded = [];
         if (array_key_exists('is_admin', $attributes)) {
-            $model->forceFill(['is_admin' => (bool) $attributes['is_admin']]);
+            $guarded['is_admin'] = (bool) $attributes['is_admin'];
+        }
+        if (array_key_exists('role', $attributes)) {
+            $guarded['role'] = $attributes['role'];
+        }
+        if (array_key_exists('username', $attributes)) {
+            $guarded['username'] = $attributes['username'];
+        }
+        if ($guarded !== []) {
+            $model->forceFill($guarded);
         }
 
         return $model;

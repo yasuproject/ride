@@ -16,7 +16,7 @@ class EnsureUserIsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->is_admin) {
+        if (! $request->user()?->isAdmin()) {
             Log::channel('security')->warning('Non-admin blocked from admin area', [
                 'user_id' => $request->user()?->getAuthIdentifier(),
                 'path' => $request->path(),

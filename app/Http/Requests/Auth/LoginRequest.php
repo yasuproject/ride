@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /** Attempts allowed for a single email + IP pair. */
+    /** Attempts allowed for a single username + IP pair. */
     private const MAX_ATTEMPTS_PER_ACCOUNT = 5;
 
     /** Attempts allowed for a single IP across every account. */
@@ -38,7 +38,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'username' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:4096'],
         ];
     }
@@ -46,8 +46,8 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * Only administrators are ever authenticated, and failures always return
-     * the same generic message so valid accounts cannot be enumerated.
+     * Only dashboard users (admin roles) are authenticated, and failures always
+     * return the same generic message so valid accounts cannot be enumerated.
      *
      * @throws ValidationException
      */
@@ -56,8 +56,8 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         $authenticated = Auth::attemptWhen(
-            $this->only('email', 'password'),
-            static fn ($user): bool => (bool) $user->is_admin,
+            $this->only('username', 'password'),
+            static fn ($user): bool => method_exists($user, 'isAdmin') ? $user->isAdmin() : (bool) ($user->is_admin ?? false),
             false,
         );
 
@@ -68,7 +68,7 @@ class LoginRequest extends FormRequest
             $this->logFailure();
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'username' => trans('auth.failed'),
             ]);
         }
 
@@ -77,7 +77,7 @@ class LoginRequest extends FormRequest
 
         Log::channel('security')->info('Admin login succeeded', [
             'user_id' => Auth::id(),
-            'email' => Str::lower((string) $this->input('email')),
+            'username' => Str::lower((string) $this->input('username')),
             'ip' => $this->ip(),
             'user_agent' => Str::limit((string) $this->userAgent(), 250),
         ]);
@@ -105,13 +105,13 @@ class LoginRequest extends FormRequest
             $seconds = RateLimiter::availableIn($key);
 
             Log::channel('security')->warning('Admin login locked out', [
-                'email' => Str::lower((string) $this->input('email')),
+                'username' => Str::lower((string) $this->input('username')),
                 'ip' => $this->ip(),
                 'retry_after' => $seconds,
             ]);
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.throttle', [
+                'username' => trans('auth.throttle', [
                     'seconds' => $seconds,
                     'minutes' => ceil($seconds / 60),
                 ]),
@@ -120,12 +120,12 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Get the rate limiting throttle key for the email + IP pair.
+     * Get the rate limiting throttle key for the username + IP pair.
      */
     public function throttleKey(): string
     {
         return 'admin-login:'.Str::transliterate(
-            Str::lower((string) $this->string('email')).'|'.$this->ip()
+            Str::lower((string) $this->string('username')).'|'.$this->ip()
         );
     }
 
@@ -140,7 +140,7 @@ class LoginRequest extends FormRequest
     private function logFailure(): void
     {
         Log::channel('security')->warning('Admin login failed', [
-            'email' => Str::lower((string) $this->input('email')),
+            'username' => Str::lower((string) $this->input('username')),
             'ip' => $this->ip(),
             'user_agent' => Str::limit((string) $this->userAgent(), 250),
         ]);

@@ -7,6 +7,10 @@ const props = defineProps({
         type: String,
         default: 'registered',
     },
+    roles: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const isAdminCreate = props.type === 'admin';
@@ -15,8 +19,10 @@ const indexRoute = isAdminCreate ? 'admin.admin-users.index' : 'admin.customers.
 
 const form = useForm({
     name: '',
+    username: '',
     email: '',
     phone: '',
+    role: 'administrator',
     password: '',
     password_confirmation: '',
 });
@@ -61,10 +67,27 @@ const submit = () => {
                             <input v-model="form.phone" type="text" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" placeholder="+2519..." autocomplete="tel" />
                             <p v-if="form.errors.phone" class="mt-1 text-sm text-rose-400">{{ form.errors.phone }}</p>
                         </div>
-                        <div :class="isAdminCreate ? 'sm:col-span-2' : ''">
-                            <label class="block text-sm font-medium text-slate-200">Email address <span v-if="!isAdminCreate" class="font-normal text-slate-500">(optional)</span></label>
+                        <div v-if="isAdminCreate">
+                            <label class="block text-sm font-medium text-slate-200">Username</label>
+                            <input v-model="form.username" type="text" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" placeholder="e.g. admin" autocomplete="username" />
+                            <p class="mt-1 text-xs text-slate-500">Used to sign in to the dashboard.</p>
+                            <p v-if="form.errors.username" class="mt-1 text-sm text-rose-400">{{ form.errors.username }}</p>
+                        </div>
+                        <div :class="isAdminCreate ? '' : 'sm:col-span-2'">
+                            <label class="block text-sm font-medium text-slate-200">Email address <span v-if="!isAdminCreate" class="font-normal text-slate-500">(optional)</span><span v-else class="font-normal text-slate-500">(optional)</span></label>
                             <input v-model="form.email" type="email" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" autocomplete="email" />
                             <p v-if="form.errors.email" class="mt-1 text-sm text-rose-400">{{ form.errors.email }}</p>
+                        </div>
+                        <div v-if="isAdminCreate" class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-slate-200">Role</label>
+                            <select v-model="form.role" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400 sm:max-w-md">
+                                <option v-for="r in roles" :key="r.value" :value="r.value">{{ r.label }}</option>
+                                <option v-if="!roles?.length" value="administrator">Administrator</option>
+                                <option v-if="!roles?.length" value="manager">Manager</option>
+                                <option v-if="!roles?.length" value="support">Support</option>
+                            </select>
+                            <p class="mt-1 text-xs text-slate-500">Choose the dashboard role for this user (e.g. Administrator, Manager, Support).</p>
+                            <p v-if="form.errors.role" class="mt-1 text-sm text-rose-400">{{ form.errors.role }}</p>
                         </div>
                     </div>
                 </section>

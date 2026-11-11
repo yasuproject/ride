@@ -18,6 +18,7 @@ const user = page.props.auth.user;
 
 const infoForm = useForm({
     name: user?.name || '',
+    username: user?.username || '',
     email: user?.email || '',
 });
 
@@ -75,7 +76,7 @@ const submitInfo = () => {
 
             <section class="rounded-2xl border border-white/10 bg-slate-900/60 p-5 sm:p-6">
                 <h2 class="text-base font-semibold text-white">Profile information</h2>
-                <p class="mt-1 text-sm text-slate-400">Update your display name and email address.</p>
+                <p class="mt-1 text-sm text-slate-400">Update your display name, dashboard username, and email address.</p>
 
                 <form @submit.prevent="submitInfo" class="mt-5 space-y-4 max-w-xl">
                     <div>
@@ -92,13 +93,26 @@ const submitInfo = () => {
                     </div>
 
                     <div>
-                        <label for="email" class="block text-sm font-medium text-slate-200">Email</label>
+                        <label for="username" class="block text-sm font-medium text-slate-200">Username</label>
+                        <input
+                            id="username"
+                            type="text"
+                            v-model="infoForm.username"
+                            required
+                            autocomplete="username"
+                            class="mt-1 block w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400"
+                        />
+                        <p class="mt-1 text-xs text-slate-500">Used to sign in to the dashboard.</p>
+                        <InputError class="mt-2" :message="infoForm.errors.username" />
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-200">Email <span class="font-normal text-slate-500">(optional)</span></label>
                         <input
                             id="email"
                             type="email"
                             v-model="infoForm.email"
-                            required
-                            autocomplete="username"
+                            autocomplete="email"
                             class="mt-1 block w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400"
                         />
                         <InputError class="mt-2" :message="infoForm.errors.email" />
@@ -188,7 +202,8 @@ const submitInfo = () => {
             <section class="rounded-2xl border border-white/10 bg-slate-900/60 p-5 sm:p-6">
                 <h2 class="text-base font-semibold text-white">User & admin management</h2>
                 <p class="mt-2 text-sm text-slate-400">
-                    Signed in as <span class="font-medium text-slate-200">{{ user?.email || user?.name }}</span>.
+                    Signed in as <span class="font-medium text-slate-200">{{ user?.username ? '@' + user.username : (user?.email || user?.name) }}</span>
+                    <span v-if="user?.role" class="text-slate-400"> ({{ user.role.charAt(0).toUpperCase() + user.role.slice(1) }})</span>.
                     Manage administrator panel accounts in
                     <Link :href="route('admin.admin-users.index')" class="text-emerald-300 hover:text-emerald-200 underline">User Management</Link>
                     and view/manage mobile app customers in

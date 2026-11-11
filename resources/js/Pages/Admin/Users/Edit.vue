@@ -5,6 +5,10 @@ import { computed } from 'vue';
 
 const props = defineProps({
     user: Object,
+    roles: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const isAdminAccount = computed(() => props.user?.account_type === 'admin' || props.user?.is_admin === true);
@@ -13,8 +17,10 @@ const indexRoute = computed(() => (isAdminAccount.value ? 'admin.admin-users.ind
 
 const form = useForm({
     name: props.user?.name ?? '',
+    username: props.user?.username ?? '',
     email: props.user?.email ?? '',
     phone: props.user?.phone ?? '',
+    role: props.user?.role ?? 'administrator',
     password: '',
     password_confirmation: '',
     remove_password: false,
@@ -62,10 +68,25 @@ const submit = () => {
                             <input v-model="form.phone" type="text" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" placeholder="+2519..." />
                             <p v-if="form.errors.phone" class="mt-1 text-sm text-rose-400">{{ form.errors.phone }}</p>
                         </div>
-                        <div :class="isAdminAccount ? 'sm:col-span-2' : ''">
-                            <label class="block text-sm font-medium text-slate-200">Email address</label>
+                        <div v-if="isAdminAccount">
+                            <label class="block text-sm font-medium text-slate-200">Username</label>
+                            <input v-model="form.username" type="text" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" autocomplete="username" />
+                            <p v-if="form.errors.username" class="mt-1 text-sm text-rose-400">{{ form.errors.username }}</p>
+                        </div>
+                        <div :class="isAdminAccount ? '' : 'sm:col-span-2'">
+                            <label class="block text-sm font-medium text-slate-200">Email address <span v-if="isAdminAccount" class="font-normal text-slate-500">(optional)</span></label>
                             <input v-model="form.email" type="email" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" />
                             <p v-if="form.errors.email" class="mt-1 text-sm text-rose-400">{{ form.errors.email }}</p>
+                        </div>
+                        <div v-if="isAdminAccount" class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-slate-200">Role</label>
+                            <select v-model="form.role" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400 sm:max-w-md">
+                                <option v-for="r in roles" :key="r.value" :value="r.value">{{ r.label }}</option>
+                                <option v-if="!roles?.length" value="administrator">Administrator</option>
+                                <option v-if="!roles?.length" value="manager">Manager</option>
+                                <option v-if="!roles?.length" value="support">Support</option>
+                            </select>
+                            <p v-if="form.errors.role" class="mt-1 text-sm text-rose-400">{{ form.errors.role }}</p>
                         </div>
                     </div>
                 </section>
@@ -89,8 +110,8 @@ const submit = () => {
                             </label>
                         </div>
                         <div v-if="isAdminAccount" class="sm:col-span-2 rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-4">
-                            <p class="text-sm font-medium text-emerald-200">Administrator account</p>
-                            <p class="text-xs text-slate-300">This account belongs to the admin panel (separate from mobile app customers).</p>
+                            <p class="text-sm font-medium text-emerald-200">Dashboard account</p>
+                            <p class="text-xs text-slate-300">This account signs in with username and password and is managed separately from mobile app customers.</p>
                         </div>
                     </div>
                 </section>

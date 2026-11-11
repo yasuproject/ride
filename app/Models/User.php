@@ -25,19 +25,27 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
     ];
 
     /**
-     * Determine whether the user is an administrator.
+     * Available dashboard roles.
      *
-     * `is_admin` is intentionally not mass assignable; it must be set with
-     * forceFill() by trusted provisioning code only.
+     * @return list<string>
+     */
+    public static function roles(): array
+    {
+        return ['administrator', 'manager', 'support'];
+    }
+
+    /**
+     * Determine whether the user can access the admin dashboard.
      */
     public function isAdmin(): bool
     {
-        return (bool) $this->is_admin;
+        return (bool) $this->is_admin || in_array((string) $this->role, self::roles(), true);
     }
 
     /**
