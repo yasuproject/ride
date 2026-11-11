@@ -8,8 +8,8 @@ const props = defineProps({
 });
 
 const isAdminAccount = computed(() => props.user?.account_type === 'admin' || props.user?.is_admin === true);
-const routeBase = computed(() => (isAdminAccount.value ? 'admin.admin-users' : 'admin.registered-users'));
-const indexRoute = computed(() => (isAdminAccount.value ? 'admin.admin-users.index' : 'admin.registered-users.index'));
+const routeBase = computed(() => (isAdminAccount.value ? 'admin.admin-users' : 'admin.customers'));
+const indexRoute = computed(() => (isAdminAccount.value ? 'admin.admin-users.index' : 'admin.customers.index'));
 
 const form = useForm({
     name: props.user?.name ?? '',
@@ -39,7 +39,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-2xl font-semibold tracking-tight text-white">Edit user</h1>
                     <p class="mt-1 text-sm text-slate-400">
-                        {{ isAdminAccount ? 'Update admin panel account details and credentials.' : 'Update registered app user details and credentials.' }}
+                        {{ isAdminAccount ? 'Update admin panel account details and credentials.' : 'Update customer account details and credentials.' }}
                     </p>
                 </div>
                 <div class="flex gap-2">
@@ -90,7 +90,7 @@ const submit = () => {
                         </div>
                         <div v-if="isAdminAccount" class="sm:col-span-2 rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-4">
                             <p class="text-sm font-medium text-emerald-200">Administrator account</p>
-                            <p class="text-xs text-slate-300">This account belongs to the admin panel (separate from mobile app registered users).</p>
+                            <p class="text-xs text-slate-300">This account belongs to the admin panel (separate from mobile app customers).</p>
                         </div>
                     </div>
                 </section>

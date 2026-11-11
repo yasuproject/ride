@@ -249,6 +249,8 @@ class OtpService
             ['name' => $cleanName ?? 'Passenger'],
         );
 
+        $this->ensureNotBlocked($user);
+
         $attributes = [];
         if ($cleanName !== null) {
             $attributes['name'] = $cleanName;
@@ -311,6 +313,15 @@ class OtpService
         return $password === '' ? null : $password;
     }
 
+    private function ensureNotBlocked(AppUser $user): void
+    {
+        if ($user->is_blocked) {
+            throw ValidationException::withMessages([
+                'phone' => 'This account has been blocked. Please contact support.',
+            ]);
+        }
+    }
+
     /**
      * Request an OTP for password reset. Only for existing accounts.
      *
@@ -327,6 +338,8 @@ class OtpService
                 'phone' => 'No account found with this phone number.',
             ]);
         }
+
+        $this->ensureNotBlocked($user);
 
         $requestKey = 'otp-request:'.$normalized;
         if (RateLimiter::tooManyAttempts($requestKey, self::MAX_REQUESTS_PER_PHONE)) {
@@ -404,6 +417,8 @@ class OtpService
                 'phone' => 'No account found with this phone number.',
             ]);
         }
+
+        $this->ensureNotBlocked($user);
 
         $failureKey = 'otp-fail:'.$normalized;
         if (RateLimiter::tooManyAttempts($failureKey, self::MAX_FAILURES_PER_PHONE)) {
@@ -518,6 +533,12 @@ class OtpService
         }
 
         $user = AppUser::query()->where('phone', $normalized)->first();
+
+        if ($user && $user->is_blocked) {
+            throw ValidationException::withMessages([
+                'phone' => 'This account has been blocked. Please contact support.',
+            ]);
+        }
 
         if (! $user || empty($user->password) || ! Hash::check($password, $user->password)) {
             RateLimiter::hit($throttleKey, 900);

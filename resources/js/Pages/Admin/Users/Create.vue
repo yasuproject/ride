@@ -10,8 +10,8 @@ const props = defineProps({
 });
 
 const isAdminCreate = props.type === 'admin';
-const routeBase = isAdminCreate ? 'admin.admin-users' : 'admin.registered-users';
-const indexRoute = isAdminCreate ? 'admin.admin-users.index' : 'admin.registered-users.index';
+const routeBase = isAdminCreate ? 'admin.admin-users' : 'admin.customers';
+const indexRoute = isAdminCreate ? 'admin.admin-users.index' : 'admin.customers.index';
 
 const form = useForm({
     name: '',
@@ -37,11 +37,11 @@ const submit = () => {
         <div class="mx-auto max-w-3xl space-y-6">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold tracking-tight text-white">{{ isAdminCreate ? 'Add admin user' : 'Add registered user' }}</h1>
+                    <h1 class="text-2xl font-semibold tracking-tight text-white">{{ isAdminCreate ? 'Add admin user' : 'Add customer' }}</h1>
                     <p class="mt-1 text-sm text-slate-400">
                         {{ isAdminCreate
                             ? 'Create an administrator account for admin panel access. Phone or email is required.'
-                            : 'Create a registered app user (customer). Phone or email is required.' }}
+                            : 'Create a mobile app customer account. Phone is required.' }}
                     </p>
                 </div>
                 <Link :href="route(indexRoute)" class="text-sm text-slate-300 hover:text-white">← Back</Link>
@@ -82,11 +82,11 @@ const submit = () => {
                             <input v-model="form.password_confirmation" type="password" class="mt-1 w-full rounded-xl border-white/10 bg-slate-950/60 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400" autocomplete="new-password" />
                         </div>
                         <div class="sm:col-span-2 rounded-xl border border-white/10 bg-white/5 p-4">
-                            <p class="text-sm font-medium text-white">{{ isAdminCreate ? 'Administrator account' : 'Registered app user' }}</p>
+                            <p class="text-sm font-medium text-white">{{ isAdminCreate ? 'Administrator account' : 'Customer account' }}</p>
                             <p class="text-xs text-slate-400">
                                 {{ isAdminCreate
-                                    ? 'This account will be created in the admin panel users table (separate from mobile app registrations).'
-                                    : 'This account will be created in the app registered users table (separate from admin panel users).' }}
+                                    ? 'This account will be created in the admin panel users table (separate from mobile app customers).'
+                                    : 'This account will be created in the app customers table (separate from admin panel users).' }}
                             </p>
                         </div>
                     </div>
@@ -95,7 +95,7 @@ const submit = () => {
                 <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <Link :href="route(indexRoute)" class="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-medium text-slate-300 ring-1 ring-white/10 hover:bg-white/5">Cancel</Link>
                     <button type="submit" :disabled="form.processing" class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60">
-                        {{ isAdminCreate ? 'Create admin user' : 'Create registered user' }}
+                        {{ isAdminCreate ? 'Create admin user' : 'Create customer' }}
                     </button>
                 </div>
             </form>

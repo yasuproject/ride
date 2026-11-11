@@ -39,7 +39,7 @@ const destroyUser = (user) => {
             <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold tracking-tight text-white">Admin user management</h1>
-                    <p class="mt-1 text-sm text-slate-400">Manage administrator accounts that can access this admin panel. Separate from mobile app registered users.</p>
+                    <p class="mt-1 text-sm text-slate-400">Manage administrator accounts that can access this admin panel. Separate from mobile app customers.</p>
                 </div>
                 <Link
                     :href="route('admin.admin-users.create')"
@@ -58,7 +58,7 @@ const destroyUser = (user) => {
                     <p class="text-sm font-medium text-emerald-200">Access control</p>
                     <p class="mt-1 text-sm text-slate-300">
                         Only admins listed here can sign in to the admin panel. App customers are managed in
-                        <Link :href="route('admin.registered-users.index')" class="text-emerald-300 underline underline-offset-2">Registered Users</Link>.
+                        <Link :href="route('admin.customers.index')" class="text-emerald-300 underline underline-offset-2">Customers</Link>.
                     </p>
                 </div>
             </section>

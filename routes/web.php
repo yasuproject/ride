@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\RegisteredUserController;
 use App\Http\Controllers\Admin\RideController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
@@ -20,10 +20,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/rides', [RideController::class, 'index'])->name('rides.index');
 
-    // App-registered users (separate table: app_users)
-    Route::resource('registered-users', RegisteredUserController::class)
-        ->parameters(['registered-users' => 'registered_user'])
-        ->names('registered-users');
+    // App customers (separate table: app_users)
+    Route::resource('customers', CustomerController::class)
+        ->parameters(['customers' => 'customer']);
+    Route::post('customers/{customer}/block', [CustomerController::class, 'block'])->name('customers.block');
+    Route::post('customers/{customer}/unblock', [CustomerController::class, 'unblock'])->name('customers.unblock');
 
     // Dashboard/admin panel accounts (separate table: users)
     Route::get('/user-management', [UserController::class, 'index'])->name('admin-users.index');

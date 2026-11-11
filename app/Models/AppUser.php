@@ -21,6 +21,7 @@ class AppUser extends Authenticatable
         'email',
         'phone',
         'password',
+        'is_blocked',
     ];
 
     /**
@@ -38,6 +39,8 @@ class AppUser extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_blocked' => 'boolean',
+            'blocked_at' => 'datetime',
         ];
     }
 }

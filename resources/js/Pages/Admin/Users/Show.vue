@@ -8,8 +8,8 @@ const props = defineProps({
 });
 
 const isAdminAccount = computed(() => props.user?.account_type === 'admin' || props.user?.is_admin === true);
-const routeBase = computed(() => (isAdminAccount.value ? 'admin.admin-users' : 'admin.registered-users'));
-const indexRoute = computed(() => (isAdminAccount.value ? 'admin.admin-users.index' : 'admin.registered-users.index'));
+const routeBase = computed(() => (isAdminAccount.value ? 'admin.admin-users' : 'admin.customers'));
+const indexRoute = computed(() => (isAdminAccount.value ? 'admin.admin-users.index' : 'admin.customers.index'));
 
 const destroyUser = () => {
     if (!confirm(`Delete ${props.user?.name || 'this user'}? This cannot be undone.`)) return;
@@ -53,7 +53,7 @@ const destroyUser = () => {
                                     'inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset',
                                 ]"
                             >
-                                {{ isAdminAccount ? 'Administrator' : 'Registered App User' }}
+                                {{ isAdminAccount ? 'Administrator' : 'Customer' }}
                             </span>
                             <span class="text-sm text-slate-400">ID #{{ user?.id }}</span>
                         </div>
@@ -86,7 +86,7 @@ const destroyUser = () => {
                     <dl class="mt-4 space-y-4 text-sm">
                         <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                             <dt class="text-slate-400">Account type</dt>
-                            <dd class="font-medium text-slate-100">{{ isAdminAccount ? 'Admin Panel User' : 'Mobile App Registered User' }}</dd>
+                            <dd class="font-medium text-slate-100">{{ isAdminAccount ? 'Admin Panel User' : 'Mobile App Customer' }}</dd>
                         </div>
                         <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                             <dt class="text-slate-400">Email verified</dt>

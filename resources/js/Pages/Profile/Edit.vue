@@ -191,8 +191,8 @@ const submitInfo = () => {
                     Signed in as <span class="font-medium text-slate-200">{{ user?.email || user?.name }}</span>.
                     Manage administrator panel accounts in
                     <Link :href="route('admin.admin-users.index')" class="text-emerald-300 hover:text-emerald-200 underline">User Management</Link>
-                    and view/manage mobile app signups in
-                    <Link :href="route('admin.registered-users.index')" class="text-emerald-300 hover:text-emerald-200 underline">Registered Users</Link>.
+                    and view/manage mobile app customers in
+                    <Link :href="route('admin.customers.index')" class="text-emerald-300 hover:text-emerald-200 underline">Customers</Link>.
                 </p>
             </section>
         </div>

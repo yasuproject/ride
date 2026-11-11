@@ -8,7 +8,7 @@ const page = usePage();
 const navigation = [
     { name: 'Dashboard', href: 'admin.dashboard', icon: 'grid' },
     { name: 'User Management', href: 'admin.admin-users.index', icon: 'shield' },
-    { name: 'Registered Users', href: 'admin.registered-users.index', icon: 'users' },
+    { name: 'Customers', href: 'admin.customers.index', icon: 'users' },
     { name: 'Rides', href: 'admin.rides.index', icon: 'car' },
     { name: 'SMS & OTP', href: 'admin.settings.edit', icon: 'settings' },
     { name: 'My Account', href: 'admin.profile.edit', icon: 'account' },
