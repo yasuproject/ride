@@ -189,9 +189,10 @@ const submitInfo = () => {
                 <h2 class="text-base font-semibold text-white">User & admin management</h2>
                 <p class="mt-2 text-sm text-slate-400">
                     Signed in as <span class="font-medium text-slate-200">{{ user?.email || user?.name }}</span>.
-                    Manage registered passengers, create accounts, and grant or revoke administrator access from the
-                    <Link :href="route('admin.users.index')" class="text-emerald-300 hover:text-emerald-200 underline">Users</Link>
-                    section.
+                    Manage administrator panel accounts in
+                    <Link :href="route('admin.admin-users.index')" class="text-emerald-300 hover:text-emerald-200 underline">User Management</Link>
+                    and view/manage mobile app signups in
+                    <Link :href="route('admin.registered-users.index')" class="text-emerald-300 hover:text-emerald-200 underline">Registered Users</Link>.
                 </p>
             </section>
         </div>

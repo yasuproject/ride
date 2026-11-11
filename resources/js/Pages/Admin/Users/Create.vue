@@ -2,13 +2,23 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
+const props = defineProps({
+    type: {
+        type: String,
+        default: 'registered',
+    },
+});
+
+const isAdminCreate = props.type === 'admin';
+
 const form = useForm({
     name: '',
     email: '',
     phone: '',
     password: '',
     password_confirmation: '',
-    is_admin: false,
+    is_admin: isAdminCreate,
+    type: props.type,
 });
 
 const submit = () => {
@@ -27,10 +37,14 @@ const submit = () => {
         <div class="mx-auto max-w-3xl space-y-6">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold tracking-tight text-white">Add a user</h1>
-                    <p class="mt-1 text-sm text-slate-400">Create a passenger or administrator account. Phone or email is required.</p>
+                    <h1 class="text-2xl font-semibold tracking-tight text-white">{{ isAdminCreate ? 'Add admin user' : 'Add registered user' }}</h1>
+                    <p class="mt-1 text-sm text-slate-400">
+                        {{ isAdminCreate
+                            ? 'Create an administrator account for admin panel access. Phone or email is required.'
+                            : 'Create a registered app user (customer). Phone or email is required.' }}
+                    </p>
                 </div>
-                <Link :href="route('admin.users.index')" class="text-sm text-slate-300 hover:text-white">← Back to users</Link>
+                <Link :href="route(isAdminCreate ? 'admin.admin-users.index' : 'admin.registered-users.index')" class="text-sm text-slate-300 hover:text-white">← Back</Link>
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
@@ -73,8 +87,8 @@ const submit = () => {
                                 <p class="text-xs text-slate-400">Admins can access this control panel. Grant carefully.</p>
                             </div>
                             <label class="relative inline-flex cursor-pointer items-center">
-                                <input v-model="form.is_admin" type="checkbox" class="peer sr-only" />
-                                <div class="h-6 w-11 rounded-full bg-slate-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition peer-checked:bg-emerald-500 peer-checked:after:translate-x-full"></div>
+                                <input v-model="form.is_admin" type="checkbox" class="peer sr-only" :disabled="isAdminCreate" />
+                                <div class="h-6 w-11 rounded-full bg-slate-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition peer-checked:bg-emerald-500 peer-checked:after:translate-x-full" :class="isAdminCreate ? 'opacity-60 cursor-not-allowed' : ''"></div>
                             </label>
                         </div>
                         <p v-if="form.errors.is_admin" class="sm:col-span-2 text-sm text-rose-400">{{ form.errors.is_admin }}</p>
@@ -82,9 +96,9 @@ const submit = () => {
                 </section>
 
                 <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <Link :href="route('admin.users.index')" class="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-medium text-slate-300 ring-1 ring-white/10 hover:bg-white/5">Cancel</Link>
+                    <Link :href="route(isAdminCreate ? 'admin.admin-users.index' : 'admin.registered-users.index')" class="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-medium text-slate-300 ring-1 ring-white/10 hover:bg-white/5">Cancel</Link>
                     <button type="submit" :disabled="form.processing" class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60">
-                        Create user
+                        {{ isAdminCreate ? 'Create admin user' : 'Create registered user' }}
                     </button>
                 </div>
             </form>

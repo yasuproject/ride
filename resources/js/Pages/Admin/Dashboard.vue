@@ -61,10 +61,10 @@ const formatDate = (d) => (d ? new Date(d).toLocaleString() : '—');
                         <p class="text-sm text-slate-400">Accounts created from the Flutter app and admin panel.</p>
                     </div>
                     <Link
-                        :href="route('admin.users.index')"
+                        :href="route('admin.registered-users.index')"
                         class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
                     >
-                        Manage users
+                        View registered users
                     </Link>
                 </div>
 

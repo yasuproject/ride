@@ -38,7 +38,7 @@ const submit = () => {
                 </div>
                 <div class="flex gap-2">
                     <Link :href="route('admin.users.show', user.id)" class="rounded-lg px-3 py-2 text-sm text-slate-300 ring-1 ring-white/10 hover:bg-white/5">View</Link>
-                    <Link :href="route('admin.users.index')" class="rounded-lg px-3 py-2 text-sm text-slate-300 hover:text-white">← Back</Link>
+                    <Link :href="route(user?.is_admin ? 'admin.admin-users.index' : 'admin.registered-users.index')" class="rounded-lg px-3 py-2 text-sm text-slate-300 hover:text-white">← Back</Link>
                 </div>
             </div>
 

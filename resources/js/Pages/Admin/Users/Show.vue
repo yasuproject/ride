@@ -57,7 +57,7 @@ const destroyUser = () => {
                 <div class="flex flex-wrap gap-2">
                     <Link :href="route('admin.users.edit', user.id)" class="inline-flex items-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Edit user</Link>
                     <button type="button" class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-rose-300 ring-1 ring-rose-400/20 hover:bg-rose-500/10" @click="destroyUser">Delete</button>
-                    <Link :href="route('admin.users.index')" class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-300 ring-1 ring-white/10 hover:bg-white/5">Back</Link>
+                    <Link :href="route(user?.is_admin ? 'admin.admin-users.index' : 'admin.registered-users.index')" class="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-300 ring-1 ring-white/10 hover:bg-white/5">Back</Link>
                 </div>
             </div>
 

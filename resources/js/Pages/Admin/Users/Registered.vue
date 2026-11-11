@@ -1,7 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive, watch } from 'vue';
+import { reactive } from 'vue';
 
 const props = defineProps({
     users: Object,
@@ -11,20 +11,15 @@ const props = defineProps({
 
 const form = reactive({
     search: props.filters?.search || '',
-    role: props.filters?.role || '',
 });
 
 let timeout = null;
 const applyFilters = () => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
-        router.get(route('admin.users.index'), { ...form }, { preserveState: true, replace: true });
+        router.get(route('admin.registered-users.index'), { ...form }, { preserveState: true, replace: true });
     }, 300);
 };
-
-watch(() => form.role, () => {
-    router.get(route('admin.users.index'), { ...form }, { preserveState: true, replace: true });
-});
 
 const rows = (paginator) => paginator?.data ?? [];
 
@@ -35,37 +30,37 @@ const destroyUser = (user) => {
 </script>
 
 <template>
-    <Head title="Users" />
+    <Head title="Registered Users" />
 
     <AdminLayout>
-        <template #header>Users</template>
+        <template #header>Registered Users</template>
 
         <div class="space-y-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold tracking-tight text-white">Registered users</h1>
-                    <p class="mt-1 text-sm text-slate-400">Manage passengers and administrators, view records, and keep accounts up to date.</p>
+                    <p class="mt-1 text-sm text-slate-400">Customers who created accounts in the mobile app. View and manage app registrations separately from admin panel users.</p>
                 </div>
                 <Link
-                    :href="route('admin.users.create')"
+                    :href="route('admin.users.create', { type: 'registered' })"
                     class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-emerald-400"
                 >
-                    + Add user
+                    + Add registered user
                 </Link>
             </div>
 
             <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
-                    <p class="text-sm text-slate-400">Total users</p>
+                    <p class="text-sm text-slate-400">Total registered</p>
                     <p class="mt-2 text-3xl font-semibold text-white">{{ stats?.total ?? 0 }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
-                    <p class="text-sm text-slate-400">Passengers</p>
-                    <p class="mt-2 text-3xl font-semibold text-sky-300">{{ stats?.passengers ?? 0 }}</p>
+                    <p class="text-sm text-slate-400">Signed up today</p>
+                    <p class="mt-2 text-3xl font-semibold text-sky-300">{{ stats?.today ?? 0 }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
-                    <p class="text-sm text-slate-400">Administrators</p>
-                    <p class="mt-2 text-3xl font-semibold text-emerald-300">{{ stats?.admins ?? 0 }}</p>
+                    <p class="text-sm text-slate-400">Last 7 days</p>
+                    <p class="mt-2 text-3xl font-semibold text-emerald-300">{{ stats?.week ?? 0 }}</p>
                 </div>
             </section>
 
@@ -88,18 +83,10 @@ const destroyUser = (user) => {
                         <input
                             v-model="form.search"
                             type="text"
-                            placeholder="Search by name, email, or phone..."
+                            placeholder="Search by name, phone, or email..."
                             class="w-full rounded-xl border-white/10 bg-slate-950/60 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400 sm:max-w-md"
                             @input="applyFilters"
                         />
-                        <select
-                            v-model="form.role"
-                            class="rounded-xl border-white/10 bg-slate-950/60 text-sm text-slate-100 focus:border-emerald-400 focus:ring-emerald-400"
-                        >
-                            <option value="">All roles</option>
-                            <option value="user">Passengers</option>
-                            <option value="admin">Administrators</option>
-                        </select>
                     </div>
                     <p class="text-sm text-slate-400">Showing <span class="font-medium text-slate-200">{{ users?.total ?? 0 }}</span></p>
                 </div>
@@ -110,8 +97,8 @@ const destroyUser = (user) => {
                             <tr>
                                 <th class="px-5 py-3 font-medium">User</th>
                                 <th class="px-5 py-3 font-medium">Contact</th>
-                                <th class="px-5 py-3 font-medium">Role</th>
-                                <th class="px-5 py-3 font-medium">Joined</th>
+                                <th class="px-5 py-3 font-medium">Type</th>
+                                <th class="px-5 py-3 font-medium">Registered</th>
                                 <th class="px-5 py-3 font-medium text-right">Actions</th>
                             </tr>
                         </thead>
@@ -126,46 +113,23 @@ const destroyUser = (user) => {
                                     <p class="text-xs text-slate-500">{{ user.email || 'No email' }}</p>
                                 </td>
                                 <td class="px-5 py-4">
-                                    <span
-                                        :class="[
-                                            user.is_admin
-                                                ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-400/20'
-                                                : 'bg-sky-500/15 text-sky-300 ring-sky-400/20',
-                                            'inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset',
-                                        ]"
-                                    >
-                                        {{ user.is_admin ? 'Administrator' : 'Passenger' }}
+                                    <span class="inline-flex rounded-full bg-sky-500/15 px-2.5 py-1 text-xs font-medium text-sky-300 ring-1 ring-inset ring-sky-400/20">
+                                        App user
                                     </span>
                                 </td>
                                 <td class="whitespace-nowrap px-5 py-4 text-slate-300">
-                                    {{ user.created_at ? new Date(user.created_at).toLocaleDateString() : '—' }}
+                                    {{ user.created_at ? new Date(user.created_at).toLocaleString() : '—' }}
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center justify-end gap-2">
-                                        <Link
-                                            :href="route('admin.users.show', user.id)"
-                                            class="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-white/10 hover:bg-white/5"
-                                        >
-                                            View
-                                        </Link>
-                                        <Link
-                                            :href="route('admin.users.edit', user.id)"
-                                            class="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/20 hover:bg-emerald-500/10"
-                                        >
-                                            Edit
-                                        </Link>
-                                        <button
-                                            type="button"
-                                            class="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-300 ring-1 ring-rose-400/20 hover:bg-rose-500/10"
-                                            @click="destroyUser(user)"
-                                        >
-                                            Delete
-                                        </button>
+                                        <Link :href="route('admin.users.show', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-white/10 hover:bg-white/5">View</Link>
+                                        <Link :href="route('admin.users.edit', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/20 hover:bg-emerald-500/10">Edit</Link>
+                                        <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-300 ring-1 ring-rose-400/20 hover:bg-rose-500/10" @click="destroyUser(user)">Delete</button>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="!rows(users).length">
-                                <td colspan="5" class="px-5 py-12 text-center text-slate-500">No users found.</td>
+                                <td colspan="5" class="px-5 py-12 text-center text-slate-500">No registered users found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -177,18 +141,9 @@ const destroyUser = (user) => {
                             <div class="min-w-0">
                                 <p class="font-semibold text-white">{{ user.name || '—' }}</p>
                                 <p class="mt-0.5 text-sm text-slate-300">{{ user.phone || user.email || 'No contact' }}</p>
-                                <p v-if="user.phone && user.email" class="text-xs text-slate-500">{{ user.email }}</p>
+                                <p class="text-xs text-slate-500">Registered {{ user.created_at ? new Date(user.created_at).toLocaleString() : '—' }}</p>
                             </div>
-                            <span
-                                :class="[
-                                    user.is_admin
-                                        ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-400/20'
-                                        : 'bg-sky-500/15 text-sky-300 ring-sky-400/20',
-                                    'shrink-0 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset',
-                                ]"
-                            >
-                                {{ user.is_admin ? 'Admin' : 'Passenger' }}
-                            </span>
+                            <span class="shrink-0 inline-flex rounded-full bg-sky-500/15 px-2.5 py-1 text-xs font-medium text-sky-300 ring-1 ring-inset ring-sky-400/20">App user</span>
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2">
                             <Link :href="route('admin.users.show', user.id)" class="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-white/10">View</Link>
@@ -196,7 +151,7 @@ const destroyUser = (user) => {
                             <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-300 ring-1 ring-rose-400/20" @click="destroyUser(user)">Delete</button>
                         </div>
                     </article>
-                    <p v-if="!rows(users).length" class="p-8 text-center text-sm text-slate-500">No users found.</p>
+                    <p v-if="!rows(users).length" class="p-8 text-center text-sm text-slate-500">No registered users found.</p>
                 </div>
 
                 <nav

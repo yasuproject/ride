@@ -18,7 +18,12 @@ Route::get('/', function () {
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/rides', [RideController::class, 'index'])->name('rides.index');
-    Route::resource('users', UserController::class);
+
+    Route::get('/registered-users', [UserController::class, 'registered'])->name('registered-users.index');
+    Route::get('/user-management', [UserController::class, 'admins'])->name('admin-users.index');
+
+    Route::resource('users', UserController::class)->except(['index']);
+
     Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 
