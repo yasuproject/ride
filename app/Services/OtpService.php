@@ -246,7 +246,7 @@ class OtpService
 
         $user = AppUser::query()->firstOrCreate(
             ['phone' => $normalized],
-            ['name' => $cleanName ?? 'Passenger'],
+            ['name' => $cleanName ?? 'Passenger', 'role' => 'passenger'],
         );
 
         $this->ensureNotBlocked($user);

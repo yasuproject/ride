@@ -21,6 +21,7 @@ class AppUser extends Authenticatable
         'email',
         'phone',
         'password',
+        'role',
         'is_blocked',
     ];
 
